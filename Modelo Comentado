@@ -1,0 +1,78 @@
+# 📌 Importando as bibliotecas necessárias
+import pandas as pd  # Manipulação de dados
+import numpy as np  # Cálculos matemáticos
+import matplotlib.pyplot as plt  # Visualização de dados
+import seaborn as sns  # Gráficos avançados
+from sklearn.model_selection import train_test_split  # Divisão dos dados
+from sklearn.preprocessing import StandardScaler  # Normalização dos dados
+from sklearn.ensemble import RandomForestClassifier  # Modelo de ML
+from xgboost import XGBClassifier  # Modelo XGBoost
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix  # Métricas
+
+# 🔽 Passo 1: Carregar o conjunto de dados
+# O dataset contém transações de cartão de crédito, sendo 0 = normal e 1 = fraude
+df = pd.read_csv("creditcard.csv")  # Certifique-se de ter esse arquivo no diretório
+
+# 🔽 Passo 2: Explorar os dados
+print("📊 Visualizando as primeiras linhas do dataset:")
+print(df.head())  # Exibir as primeiras 5 linhas do dataset
+
+# Verificar a quantidade de fraudes (1) e transações normais (0)
+print("\n📊 Contagem de transações normais e fraudulentas:")
+print(df["Class"].value_counts())
+
+# 🔽 Passo 3: Pré-processamento dos dados
+# Como a coluna "Amount" varia muito, normalizamos os valores para melhorar o desempenho do modelo
+scaler = StandardScaler()
+df["Amount"] = scaler.fit_transform(df["Amount"].values.reshape(-1, 1))
+
+# Separar os dados entre Features (X) e Target (y)
+X = df.drop("Class", axis=1)  # Removemos a coluna de classe, pois será a variável alvo
+y = df["Class"]  # Essa é a variável que queremos prever
+
+# 🔽 Passo 4: Dividir o dataset em treino (80%) e teste (20%)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# 🔽 Passo 5: Treinamento dos Modelos de Machine Learning
+# 🌳 Random Forest Classifier
+rf_model = RandomForestClassifier(n_estimators=100, random_state=42)
+rf_model.fit(X_train, y_train)  # Treinamento do modelo
+
+# ⚡ XGBoost Classifier
+xgb_model = XGBClassifier(n_estimators=100, learning_rate=0.1, random_state=42)
+xgb_model.fit(X_train, y_train)  # Treinamento do modelo
+
+# 🔽 Passo 6: Fazer Previsões com os Modelos
+y_pred_rf = rf_model.predict(X_test)  # Previsões do Random Forest
+y_pred_xgb = xgb_model.predict(X_test)  # Previsões do XGBoost
+
+# 🔽 Passo 7: Avaliação dos Modelos
+print("\n📊 Relatório de Classificação - Random Forest:")
+print(classification_report(y_test, y_pred_rf))
+
+print("\n📊 Relatório de Classificação - XGBoost:")
+print(classification_report(y_test, y_pred_xgb))
+
+# 🔽 Passo 8: Criar a Matriz de Confusão para Visualizar o Desempenho
+plt.figure(figsize=(6, 4))
+sns.heatmap(confusion_matrix(y_test, y_pred_xgb), annot=True, fmt="d", cmap="Blues")
+plt.xlabel("Previsto")
+plt.ylabel("Real")
+plt.title("Matriz de Confusão - XGBoost")
+plt.show()
+
+# 🔽 Passo 9: Criar um Gráfico para Visualizar a Distribuição das Fraudes
+plt.figure(figsize=(10, 6))
+sns.boxplot(x="Class", y="Amount", data=df)
+plt.title("Distribuição de Valores de Transação por Tipo")
+plt.show()
+
+# 🔽 Passo 10: Criar um Exemplo de Predição
+# Exemplo de uma nova transação (valores fictícios)
+nova_transacao = [[5000, 0, 1, 0.8, 0, 1]]  # (valor, localização, frequência, etc.)
+previsao = xgb_model.predict(nova_transacao)
+
+if previsao == 1:
+    print("⚠️ Transação Suspeita! 🚨")
+else:
+    print("✅ Transação Normal.")
